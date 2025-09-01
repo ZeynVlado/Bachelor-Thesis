@@ -6,20 +6,29 @@
 #include <random>
 #include <vector>
 
+#include "ArrayType.h"
+
 
 class DataGenerator {
 
 public:
     DataGenerator();
 
+
+    std::vector<int> input;
+
+    void generate_Data(ArrayType type, int size, int minValue, int maxValue, int runs, int k);
+
     void printArray(const std::vector<int>& arr);
 
-    std::vector<int> generateRandom(size_t size, int minValue, int maxValue);
+    std::vector<int> generatePermutation(size_t size);
+
+    std::vector<int> generateRandom(size_t size, int minValue, int maxValue, int k);
     std::vector<int> generateSorted(size_t size, int minValue, int maxValue);
     std::vector<int> generateReverseSorted(size_t size, int minValue, int maxValue);
     std::vector<int> generateRuns(size_t size, size_t runsCount, int minValue, int maxValue);
     std::vector<int> generateInversions(size_t size, size_t invCount, int minValue, int maxValue);
-    std::vector<int> generateRem(size_t size, size_t remCount, int minValue, int maxValue);
+    std::vector<int> generateRem(size_t size, size_t remCount, int minValue, int maxValue, int k);
     std::vector<int> generateHam(size_t size, size_t hamCount, int minValue, int maxValue);
     std::vector<int> generateDis(size_t size, size_t maxDistance, int minValue, int maxValue);
     std::vector<int> generateExs(size_t size, size_t exchanges, int minValue, int maxValue);
@@ -27,10 +36,73 @@ public:
 
     std::vector<int> generateMax(size_t size, size_t maxDistance, int minValue, int maxValue);
 
+    std::vector<int> getInput() {
+        return input;
+    };
+
 
 
 
 private:
+
+     // Generate one ascending run of length L and append it to `out`.
+    // If hasPrev == true, the run's start must be < prevLast.
+    // Values must stay within [minValue, maxValue].
+    // For L == 1, the single value must be > minValue.
+    bool generateSingleRun(std::mt19937& gen,
+                           size_t L,
+                           int minValue,
+                           int maxValue,
+                           bool hasPrev,
+                           int prevLast,
+                           std::vector<int>& out);
+
+    // Regenerate the previous run k in-place within `data` using the same length.
+    // Keeps it strictly below the run before it (if exists), and avoids L==1 at minValue.
+    bool regeneratePreviousRun(std::mt19937& gen,
+                               size_t k,
+                               const std::vector<size_t>& runLengths,
+                               const std::vector<size_t>& runStarts,
+                               int minValue,
+                               int maxValue,
+                               std::vector<int>& data);
+
+    // Build random run lengths that sum exactly to `size`.
+    std::vector<size_t> buildRunLengths(size_t size,
+                                        size_t runsCount,
+                                        std::mt19937& gen,
+                                        std::uniform_int_distribution<int>& distLength);
+
+    // Prefix sums of lengths → start indices of each run in the final array.
+    std::vector<size_t> buildRunStarts(const std::vector<size_t>& runLengths);
+
+    // Check whether the next run of length L would have an empty start interval given prevLast.
+    static bool needBacktrackForNextRun(size_t L,
+                                        int prevLast,
+                                        int minValue,
+                                        int maxValue);
+
+    // Retry wrapper around generateSingleRun to avoid rare random dead-ends.
+    bool generateRunWithRetries(std::mt19937& gen,
+                                size_t L,
+                                int minValue,
+                                int maxValue,
+                                bool hasPrev,
+                                int prevLast,
+                                std::vector<int>& out,
+                                int attempts = 100);
+
+    // Ensure the previous run(s) allow starting the current run; backtracks/regenerates if needed.
+    bool ensurePrevRunFeasible(std::mt19937& gen,
+                               size_t currentRunIndex,
+                               size_t L,
+                               const std::vector<size_t>& runLengths,
+                               const std::vector<size_t>& runStarts,
+                               int minValue,
+                               int maxValue,
+                               std::vector<int>& data);
+
+
     std::vector<int> generateRunLengths(size_t size, size_t runsCount);
 
     std::vector<int> generateRandomElements(size_t count, int minValue, int maxValue);
