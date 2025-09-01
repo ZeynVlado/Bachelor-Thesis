@@ -308,7 +308,7 @@ private:
     return sizes;
 }
 
-std::vector<int> computeStrataStarts(const std::vector<int>& strataSizes) const {
+    std::vector<int> computeStrataStarts(const std::vector<int>& strataSizes) const {
     std::vector<int> starts;
     starts.reserve(strataSizes.size());
     int cursor = 0;
@@ -319,7 +319,7 @@ std::vector<int> computeStrataStarts(const std::vector<int>& strataSizes) const 
     return starts;
 }
 
-std::vector<int> computeProportionalClusterSizes(const std::vector<int>& strataSizes,
+    std::vector<int> computeProportionalClusterSizes(const std::vector<int>& strataSizes,
                                                  int n, int sampleLen) const {
     std::vector<int> cls(strataSizes.size(), 0);
     int total = 0;
@@ -332,7 +332,7 @@ std::vector<int> computeProportionalClusterSizes(const std::vector<int>& strataS
     return cls;
 }
 
-void distributeRemainder(std::vector<int>& clusterSizes,
+    void distributeRemainder(std::vector<int>& clusterSizes,
                          const std::vector<int>& strataSizes,
                          int sampleLen) const {
 
@@ -359,7 +359,7 @@ void distributeRemainder(std::vector<int>& clusterSizes,
     }
 }
 
-void appendRandomClusterFromStratum(int stratumStart, int stratumSize, int take,
+    void appendRandomClusterFromStratum(int stratumStart, int stratumSize, int take,
                                     std::mt19937& gen, std::vector<int>& out) const {
     if (take <= 0 || stratumSize <= 0) return;
     take = std::min(take, stratumSize);

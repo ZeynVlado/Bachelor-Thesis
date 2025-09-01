@@ -1,7 +1,5 @@
 #include <iostream>
 
-
-#include "src/AdaptiveAlg.h"
 #include "src/Algotrithms/AdaptiveShiversSort.h"
 #include "src/Algotrithms/MergeSort.h"
 #include "src/Algotrithms/PowerSort.h"
@@ -37,7 +35,7 @@ int main() {
     std::string out = "C:/Users/markg/CLionProjects/DisorderMetrics/src/experiment_data_output";
 
     ev.prepareOutputStructure(in, out);
-    ev.evaluateAll(in, out);
+    ev.evaluateAll(in, out, true);
 
 
 }

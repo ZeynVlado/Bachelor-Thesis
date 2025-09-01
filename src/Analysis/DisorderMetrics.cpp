@@ -1,34 +1,29 @@
 
-
 #include "DisorderMetrics.h"
-
 #include <deque>
 #include <unordered_map>
 #include <limits>
 
-int DisorderMetrics::calculateRuns(const std::vector<int>& arr) {
+
+
+long long DisorderMetrics::calculateRuns(const std::vector<int>& arr) {
     if (arr.empty()) return 0;
-
-    int runsCount = 1;
-
-    for (size_t i = 1; i < arr.size(); i++) {
-        if (arr[i] < arr[i - 1]) {
-            runsCount++;
-        }
+    long long runsCount = 1;
+    for (size_t i = 1; i < arr.size(); ++i) {
+        if (arr[i] < arr[i - 1]) ++runsCount;
     }
-
     return runsCount;
 }
 
-long long DisorderMetrics::mergeAndCollect(std::vector<int> arr, int left, int mid, int right) {
+long long DisorderMetrics::mergeAndCollect(std::vector<int>& arr, int left, int mid, int right) {
     int leftSize = mid - left + 1;
     int rightSize = right - mid;
 
     std::vector<int> leftPart(leftSize);
     std::vector<int> rightPart(rightSize);
 
-    for (int i = 0; i < leftSize; i++) leftPart[i] = arr[left + i];
-    for (int i = 0; i < rightSize; i++) rightPart[i] = arr[mid + 1 + i];
+    for (int i = 0; i < leftSize; ++i) leftPart[i] = arr[left + i];
+    for (int j = 0; j < rightSize; ++j) rightPart[j] = arr[mid + 1 + j];
 
     int i = 0, j = 0, k = left;
     long long invCount = 0;
@@ -44,11 +39,10 @@ long long DisorderMetrics::mergeAndCollect(std::vector<int> arr, int left, int m
 
     while (i < leftSize) arr[k++] = leftPart[i++];
     while (j < rightSize) arr[k++] = rightPart[j++];
-
     return invCount;
 }
 
-long long DisorderMetrics::mergeSortAndCollect(std::vector<int> arr, int left, int right) {
+long long DisorderMetrics::mergeSortAndCollect(std::vector<int>& arr, int left, int right) {
     long long invCount = 0;
     if (left < right) {
         int mid = left + (right - left) / 2;
@@ -59,75 +53,80 @@ long long DisorderMetrics::mergeSortAndCollect(std::vector<int> arr, int left, i
     return invCount;
 }
 
-long long DisorderMetrics::calculateInversions(std::vector<int> arr) {
-    return mergeSortAndCollect(arr, 0, arr.size() - 1);
+long long DisorderMetrics::calculateInversions(const std::vector<int>& arr) {
+    if (arr.size() < 2) return 0;
+    std::vector<int> tmp = arr;
+    return mergeSortAndCollect(tmp, 0, static_cast<int>(tmp.size()) - 1);
 }
 
-int DisorderMetrics::calculateRem(const std::vector<int> a) {
-    if (a.empty()) return 0;
+
+long long DisorderMetrics::calculateRem(const std::vector<int>& arr) {
+    if (arr.empty()) return 0;
     std::vector<int> tail;
-    for (int x : a) {
+    tail.reserve(arr.size());
+    for (int x : arr) {
         auto it = std::upper_bound(tail.begin(), tail.end(), x);
         if (it == tail.end()) tail.push_back(x);
         else *it = x;
     }
-    return static_cast<int>(tail.size());
+    return static_cast<long long>(tail.size());
 }
 
-int DisorderMetrics::calculateOsc(const std::vector<int> arr) {
-    int count = 0;
+long long DisorderMetrics::calculateOsc(const std::vector<int>& arr) {
     if (arr.size() < 3) return 0;
-
-    for (size_t i = 1; i < arr.size() - 1; i++) {
+    long long count = 0;
+    for (size_t i = 1; i + 1 < arr.size(); ++i) {
         bool isPeak = (arr[i - 1] < arr[i] && arr[i] > arr[i + 1]);
         bool isValley = (arr[i - 1] > arr[i] && arr[i] < arr[i + 1]);
-        if (isPeak || isValley) count++;
+        if (isPeak || isValley) ++count;
     }
-
     return count;
 }
 
-
-int DisorderMetrics::calculateDis(const std::vector<int> a) {
-    std::vector<int> sorted = a;
+long long DisorderMetrics::calculateDis(const std::vector<int>& arr) {
+    std::vector<int> sorted = arr;
     std::stable_sort(sorted.begin(), sorted.end());
 
     std::unordered_map<int, std::deque<int>> pos;
     pos.reserve(sorted.size());
-    for (int i = 0; i < (int)sorted.size(); ++i) pos[sorted[i]].push_back(i);
+    for (int i = 0; i < static_cast<int>(sorted.size()); ++i) {
+        pos[sorted[i]].push_back(i);
+    }
 
     long long sum = 0;
-    for (int i = 0; i < (int)a.size(); ++i) {
-        int idx = pos[a[i]].front(); pos[a[i]].pop_front();
-        sum += std::llabs((long long)idx - i);
+    for (int i = 0; i < static_cast<int>(arr.size()); ++i) {
+        int idx = pos[arr[i]].front();
+        pos[arr[i]].pop_front();
+        sum += std::llabs(static_cast<long long>(idx) - i);
     }
     return sum;
 }
 
-
-int DisorderMetrics::calculateHam(const std::vector<int> arr) {
-    std::vector<int> sortedArr = arr;
-    std::sort(sortedArr.begin(), sortedArr.end());
-
-    int count = 0;
-    for (size_t i = 0; i < arr.size(); i++) {
-        if (arr[i] != sortedArr[i]) count++;
+long long DisorderMetrics::calculateHam(const std::vector<int>& arr) {
+    std::vector<int> sorted = arr;
+    std::sort(sorted.begin(), sorted.end());
+    long long count = 0;
+    for (size_t i = 0; i < arr.size(); ++i) {
+        if (arr[i] != sorted[i]) ++count;
     }
-
     return count;
 }
 
-int DisorderMetrics::calculateMax(const std::vector<int> a) {
-    std::vector<int> sorted = a;
+long long DisorderMetrics::calculateMax(const std::vector<int>& arr) {
+    std::vector<int> sorted = arr;
     std::stable_sort(sorted.begin(), sorted.end());
+
     std::unordered_map<int, std::deque<int>> pos;
     pos.reserve(sorted.size());
-    for (int i = 0; i < (int)sorted.size(); ++i) pos[sorted[i]].push_back(i);
+    for (int i = 0; i < static_cast<int>(sorted.size()); ++i) {
+        pos[sorted[i]].push_back(i);
+    }
 
-    int best = 0;
-    for (int i = 0; i < (int)a.size(); ++i) {
-        int idx = pos[a[i]].front(); pos[a[i]].pop_front();
-        best = std::max(best, std::abs(idx - i));
+    long long best = 0;
+    for (int i = 0; i < static_cast<int>(arr.size()); ++i) {
+        int idx = pos[arr[i]].front();
+        pos[arr[i]].pop_front();
+        best = std::max(best, static_cast<long long>(std::abs(idx - i)));
     }
     return best;
 }
@@ -135,7 +134,6 @@ int DisorderMetrics::calculateMax(const std::vector<int> a) {
 
 double DisorderMetrics::normalizeInversions(long long invCount, long long n) {
     if (n < 2) return 0.0;
-    // n*(n-1)/2
     long double nd = static_cast<long double>(n);
     long double denom = nd * (nd - 1.0L) / 2.0L;
     return static_cast<double>(static_cast<long double>(invCount) / denom);
@@ -165,11 +163,8 @@ double DisorderMetrics::normalizeOsc(long long oscCount, long long n) {
 
 double DisorderMetrics::normalizeDis(long long disSum, long long n) {
     if (n <= 1) return 0.0;
-    // even: n^2/2, odd: (n^2 - 1)/2
     long double nd = static_cast<long double>(n);
-    long double denom = ( (n % 2 == 0)
-        ? (nd * nd / 2.0L)
-        : ((nd * nd - 1.0L) / 2.0L) );
+    long double denom = ((n % 2 == 0) ? (nd * nd / 2.0L) : ((nd * nd - 1.0L) / 2.0L));
     return static_cast<double>(static_cast<long double>(disSum) / denom);
 }
 

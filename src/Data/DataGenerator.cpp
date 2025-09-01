@@ -129,7 +129,6 @@ std::vector<int> DataGenerator::generateRuns(size_t size, size_t runsCount, int 
     const auto runLengths = buildRunLengths(size, runsCount, gen, distLength);
     const auto runStarts  = buildRunStarts(runLengths);
 
-    // 2) Generate runs with backtracking when needed
     for (size_t i = 0; i < runsCount; ++i) {
         const size_t L = runLengths[i];
         if (L == 0) continue;
@@ -152,7 +151,6 @@ std::vector<int> DataGenerator::generateRuns(size_t size, size_t runsCount, int 
     return data;
 }
 
-//
 
 bool DataGenerator::generateSingleRun(std::mt19937& gen,
                                       size_t L,
@@ -164,7 +162,6 @@ bool DataGenerator::generateSingleRun(std::mt19937& gen,
 {
     if (L == 0) return true;
 
-    // Upper bound for the start value to ensure enough space for L-1 increments
     long long hi = static_cast<long long>(maxValue) - static_cast<long long>(L) + 1LL;
 
     if (hasPrev) {
@@ -178,7 +175,7 @@ bool DataGenerator::generateSingleRun(std::mt19937& gen,
     }
 
     if (hi < lo) {
-        return false; // Constraints cannot be satisfied
+        return false;
     }
 
     std::uniform_int_distribution<int> distStart(static_cast<int>(lo), static_cast<int>(hi));
@@ -220,11 +217,10 @@ bool DataGenerator::regeneratePreviousRun(std::mt19937& gen,
     const size_t L        = runLengths[k];
     const size_t startIdx = runStarts[k];
 
-    // Remove the old run k
     data.erase(data.begin() + static_cast<long long>(startIdx),
                data.begin() + static_cast<long long>(startIdx) + static_cast<long long>(L));
 
-    // Determine the last element of the run before k
+
     const bool hasPrev2 = (k > 0);
     int prevLast2 = 0;
     if (hasPrev2) {
@@ -337,220 +333,8 @@ bool DataGenerator::ensurePrevRunFeasible(std::mt19937& gen,
 }
 
 
-std::vector<int> DataGenerator::generateInversions(size_t size, size_t invCount,
-                                                   int minValue, int maxValue) {
 
 
-    std::vector<int> arr = generateSorted(size, minValue, maxValue);
-
-
-    std::mt19937 rng(std::random_device{}());
-    std::vector<int> result;
-    result.reserve(size);
-
-    size_t remainingInv = invCount;
-
-    for (size_t i = 0; i < size; ++i) {
-
-        size_t rem = size - 1 - i;
-
-
-        size_t maxFuture = rem * (rem + 1) / 2;
-
-        size_t ub = std::min(i, remainingInv);
-
-        size_t lb = (remainingInv > maxFuture) ? (remainingInv - maxFuture) : 0;
-
-        if (lb > ub) {
-            lb = std::min(lb, ub);
-        }
-
-        std::uniform_int_distribution<size_t> dist(lb, ub);
-        size_t pos = dist(rng);
-
-        result.insert(result.end() - static_cast<std::ptrdiff_t>(pos), arr[i]);
-
-        remainingInv -= pos;
-    }
-    return result;
-}
-std::vector<int> DataGenerator::generateRem(size_t size, size_t remCount, int minValue, int maxValue, int k) {
-
-    size_t lisLength = size - remCount;
-    auto lis = generateSorted(lisLength, minValue, maxValue);
-    auto rem = generateRandom(remCount, minValue, maxValue,  k );
-
-    return mergeLISandRemovals(lis, rem);
-}
-
-std::vector<int> DataGenerator::mergeLISandRemovals(const std::vector<int>& lis,
-                                                    const std::vector<int>& removals) {
-    std::vector<int> result;
-    result.reserve(lis.size() + removals.size());
-
-    size_t lisIdx = 0, remIdx = 0;
-    std::uniform_int_distribution<int> choice(0, 1);
-
-    while (lisIdx < lis.size() || remIdx < removals.size()) {
-        if (lisIdx < lis.size() && (remIdx >= removals.size() || choice(rng) == 0)) {
-            result.push_back(lis[lisIdx++]);
-        } else {
-            result.push_back(removals[remIdx++]);
-        }
-    }
-    return result;
-}
-
-
-std::vector<int> DataGenerator::generateHam(size_t size, size_t hamCount, int minValue, int maxValue) {
-
-
-    std::vector<int> arr = generateSorted(size, minValue, maxValue);
-
-    std::unordered_set<size_t> hamIndices;
-    std::uniform_int_distribution<size_t> dist(0, size - 1);
-    while (hamIndices.size() < hamCount) {
-        hamIndices.insert(dist(rng));
-    }
-
-    for (size_t idx : hamIndices) {
-        size_t swapIdx;
-        do {
-            swapIdx = dist(rng);
-        } while (swapIdx == idx);
-        std::swap(arr[idx], arr[swapIdx]);
-    }
-
-    return arr;
-}
-
-std::vector<std::vector<size_t>> DataGenerator::splitIntoCycles(
-    std::vector<size_t>& indices, size_t cyclesCount) {
-    std::shuffle(indices.begin(), indices.end(), rng);
-    std::vector<std::vector<size_t>> cycles(cyclesCount);
-
-    size_t idx = 0;
-    for (size_t c = 0; c < cyclesCount; ++c) {
-        size_t remaining = indices.size() - idx;
-        size_t cyclesLeft = cyclesCount - c;
-        size_t cycleSize = (remaining - (cyclesLeft - 1)) > 1
-            ? std::uniform_int_distribution<size_t>(1, remaining - (cyclesLeft - 1))(rng)
-            : 1;
-
-        for (size_t j = 0; j < cycleSize; ++j) {
-            cycles[c].push_back(indices[idx++]);
-        }
-    }
-    return cycles;
-}
-
-void DataGenerator::rotateCycles(std::vector<std::vector<size_t>>& cycles) {
-    for (auto& cycle : cycles) {
-        if (cycle.size() > 1) {
-            std::rotate(cycle.begin(), cycle.begin() + 1, cycle.end());
-        }
-    }
-}
-
-std::vector<int> DataGenerator::applyPermutation(
-    const std::vector<int>& base,
-    const std::vector<std::vector<size_t>>& cycles,
-    const std::vector<size_t>& indices
-) {
-    std::vector<int> result(base.size());
-    size_t idx = 0;
-    for (const auto& cycle : cycles) {
-        for (size_t src : cycle) {
-            size_t dst = indices[idx++];
-            result[dst] = base[src];
-        }
-    }
-    return result;
-}
-
-std::vector<int> DataGenerator::generateExs(size_t size, size_t exchanges, int minValue, int maxValue) {
-
-    auto base = generateSorted(size, minValue, maxValue);
-
-    std::vector<size_t> indices(size);
-    std::iota(indices.begin(), indices.end(), 0);
-
-    size_t cyclesCount = size - exchanges;
-
-    auto cycles = splitIntoCycles(indices, cyclesCount);
-
-    rotateCycles(cycles);
-
-    return applyPermutation(base, cycles, indices);
-}
-
-std::vector<int> DataGenerator::generateOsc(size_t size, size_t oscValue, int minValue, int maxValue) {
-    if (size == 0) return {};
-    if (oscValue > size - 1) oscValue = size - 1;
-
-    std::vector<int> arr = generateSorted(size, minValue, maxValue);
-
-    applyOscillation(arr, oscValue);
-
-    return arr;
-}
-
-void DataGenerator::applyOscillation(std::vector<int>& arr, size_t oscValue) {
-    size_t n = arr.size();
-    if (n < 2 || oscValue == 0) return;
-
-    size_t maxOsc = n - 1;
-    if (oscValue > maxOsc) oscValue = maxOsc;
-
-    std::vector<bool> directions(n - 1, true);
-
-    std::unordered_set<size_t> changePos;
-    std::uniform_int_distribution<size_t> dist(1, n - 2);
-
-    while (changePos.size() < oscValue) {
-        changePos.insert(dist(rng));
-    }
-
-    bool currentDir = true;
-    for (size_t i = 0; i < n - 1; ++i) {
-        directions[i] = currentDir;
-        if (changePos.count(i) > 0) {
-            currentDir = !currentDir;
-        }
-    }
-
-    std::shuffle(arr.begin(), arr.end(), rng);
-    std::sort(arr.begin(), arr.end());
-
-    std::vector<int> result(n);
-    size_t low = 0;
-    size_t high = n - 1;
-
-    result[0] = arr[low++];
-    for (size_t i = 0; i < n - 1; ++i) {
-        if (directions[i]) {
-            result[i + 1] = arr[high--];
-        } else {
-            result[i + 1] = arr[low++];
-        }
-    }
-
-    arr = std::move(result);
-}
-
-std::vector<int> DataGenerator::generateMax(
-    size_t size, size_t maxDistance, int minValue, int maxValue)
-{
-
-    std::vector<int> arr = generateSorted(size, minValue, maxValue);
-
-
-    std::uniform_int_distribution<size_t> dist(0, size - maxDistance - 1);
-    size_t i = dist(rng);
-    std::swap(arr[i], arr[i + maxDistance]);
-
-    return arr;
-}
 
 
 

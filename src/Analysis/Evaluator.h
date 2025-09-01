@@ -54,41 +54,56 @@ public:
     }
 
     void evaluateAll(const std::string& inputRoot,
-                     const std::string& outputRoot) const
-    {
-        if (!fs::exists(inputRoot)) {
-            throw std::runtime_error("Input root does not exist: " + inputRoot);
-        }
-        ensureDir(outputRoot);
+                 const std::string& outputRoot,
+                 bool overwrite) const
+{
+    if (!fs::exists(inputRoot)) {
+        throw std::runtime_error("Input root does not exist: " + inputRoot);
+    }
+    ensureDir(outputRoot);
 
-        for (const auto& entry : fs::recursive_directory_iterator(inputRoot)) {
-            const fs::path rel = fs::relative(entry.path(), inputRoot);
-            const fs::path out = fs::path(outputRoot) / rel;
+    for (const auto& entry : fs::recursive_directory_iterator(inputRoot)) {
+        const fs::path rel = fs::relative(entry.path(), inputRoot);
+        const fs::path out = fs::path(outputRoot) / rel;
 
+        if (entry.is_regular_file() && entry.path().filename() == "arrays.csv") {
+            const fs::path outDir         = out.parent_path();
+            const fs::path arraysMetrics  = outDir / "arrays_metrics.csv";
+            ensureDir(outDir.string());
 
-            if (entry.is_regular_file() && entry.path().filename() == "arrays.csv") {
-                ensureDir(out.parent_path().string());
-                evaluateCSVtoNormMetrics(
-                    entry.path().string(),
-                    (out.parent_path() / "arrays_metrics.csv").string()
-                );
-                continue;
+            if (!overwrite && fs::exists(arraysMetrics)) {
+                std::cout << "[SKIP] " << arraysMetrics.string()
+                          << " (exists; overwrite=false)\n";
+            } else {
+                std::cout << "[WRITE] " << arraysMetrics.string()
+                          << (overwrite ? " (overwrite)\n" : " (create)\n");
+                evaluateCSVtoNormMetrics(entry.path().string(),
+                                         arraysMetrics.string());
             }
-
-
-            if (entry.is_directory() && hasFile(entry.path(), "samples.csv")) {
-                ensureDir(out.string());
-                evaluateCSVtoNormMetrics(
-                    (entry.path() / "samples.csv").string(),
-                    (out / "sample_metrics.csv").string()
-                );
-                continue;
-            }
+            continue;
         }
 
-        std::cout << "[OK] Full evaluation finished. Output at: " << outputRoot << "\n";
+        if (entry.is_directory() && hasFile(entry.path(), "samples.csv")) {
+            const fs::path samplesCsv     = entry.path() / "samples.csv";
+            const fs::path outDir         = fs::path(outputRoot) / fs::relative(entry.path(), inputRoot);
+            const fs::path sampleMetrics  = outDir / "sample_metrics.csv";
+            ensureDir(outDir.string());
+
+            if (!overwrite && fs::exists(sampleMetrics)) {
+                std::cout << "[SKIP] " << sampleMetrics.string()
+                          << " (exists; overwrite=false)\n";
+            } else {
+                std::cout << "[WRITE] " << sampleMetrics.string()
+                          << (overwrite ? " (overwrite)\n" : " (create)\n");
+                evaluateCSVtoNormMetrics(samplesCsv.string(),
+                                         sampleMetrics.string());
+            }
+            continue;
+        }
     }
 
+    std::cout << "[OK] Full evaluation finished. Output at: " << outputRoot << "\n";
+}
 private:
 
     static void ensureDir(const std::string& path) {
@@ -158,40 +173,30 @@ private:
         }
     }
 
-    static void writeNormMetricsLine(std::ofstream& ofs, const std::vector<int>& arr) {
-
-        std::vector<int> tmp = arr;
-
+    static void writeNormMetricsLine(std::ofstream& out, const std::vector<int>& row) {
         DisorderMetrics dm;
 
-        const int n = static_cast<int>(arr.size());
+        const long long n    = static_cast<long long>(row.size());
+        const long long runs = (dm.calculateRuns(row));
+        const long long inv  = dm.calculateInversions(row);
+        const long long rem  = (dm.calculateRem(row));
+        const long long osc  = (dm.calculateOsc(row));
+        const long long dis  = (dm.calculateDis(row));
+        const long long ham  = (dm.calculateHam(row));
 
-        const int runsRaw     = dm.calculateRuns(arr);
-        const double runsNorm = dm.normalizeRuns(runsRaw, n);
+        const double normRuns = dm.normalizeRuns(runs, n);
+        const double normInv  = dm.normalizeInversions(inv, n);
+        const double normRem  = dm.normalizeRem(rem, n);
+        const double normOsc  = dm.normalizeOsc(osc, n);
+        const double normDis  = dm.normalizeDis(dis, n);
+        const double normHam  = dm.normalizeHam(ham, n);
 
-        const long long invRaw = dm.calculateInversions(tmp); // tmp портится
-        const double invNorm   = dm.normalizeInversions(invRaw, n);
-
-        const int remRaw     = dm.calculateRem(arr);
-        const double remNorm = dm.normalizeRem(remRaw, n);
-
-        const int oscRaw     = dm.calculateOsc(arr);
-        const double oscNorm = dm.normalizeOsc(oscRaw, n);
-
-        const int disRaw     = dm.calculateDis(arr);
-        const double disNorm = dm.normalizeDis(disRaw, n);
-
-        const int hamRaw     = dm.calculateHam(arr);
-        const double hamNorm = dm.normalizeHam(hamRaw, n);
-
-        ofs << n << ","
-            << invNorm  << ","
-            << runsNorm << ","
-            << remNorm  << ","
-            << oscNorm  << ","
-            << disNorm  << ","
-            << hamNorm
-            << "\n";
+        out << normRuns << ','
+            << normInv  << ','
+            << normRem  << ','
+            << normOsc  << ','
+            << normDis  << ','
+            << normHam  << '\n';
     }
 };
 #endif //CHARTBUILDER_H
