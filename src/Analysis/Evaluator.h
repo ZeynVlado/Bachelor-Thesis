@@ -173,30 +173,34 @@ private:
         }
     }
 
-    static void writeNormMetricsLine(std::ofstream& out, const std::vector<int>& row) {
+
+    static void writeNormMetricsLine(std::ofstream& ofs, const std::vector<int>& a) {
         DisorderMetrics dm;
 
-        const long long n    = static_cast<long long>(row.size());
-        const long long runs = (dm.calculateRuns(row));
-        const long long inv  = dm.calculateInversions(row);
-        const long long rem  = (dm.calculateRem(row));
-        const long long osc  = (dm.calculateOsc(row));
-        const long long dis  = (dm.calculateDis(row));
-        const long long ham  = (dm.calculateHam(row));
+        const long long n = static_cast<long long>(a.size());
 
-        const double normRuns = dm.normalizeRuns(runs, n);
-        const double normInv  = dm.normalizeInversions(inv, n);
-        const double normRem  = dm.normalizeRem(rem, n);
-        const double normOsc  = dm.normalizeOsc(osc, n);
-        const double normDis  = dm.normalizeDis(dis, n);
-        const double normHam  = dm.normalizeHam(ham, n);
+        const long long runs = dm.calculateRuns(a);
+        const long long inv  = dm.calculateInversions(a);
+        const long long rem  = dm.calculateRem(a);
+        const long long osc  = dm.calculateOsc(a);
+        const long long dis  = dm.calculateDis(a);
+        const long long ham  = dm.calculateHam(a);
 
-        out << normRuns << ','
-            << normInv  << ','
-            << normRem  << ','
-            << normOsc  << ','
-            << normDis  << ','
-            << normHam  << '\n';
+        const double runsNorm = dm.normalizeRuns(runs, n);
+        const double invNorm  = dm.normalizeInversions(inv, n);
+        const double remNorm  = dm.normalizeRem(rem, n);
+        const double oscNorm  = dm.normalizeOsc(osc, n);
+        const double disNorm  = dm.normalizeDis(dis, n);
+        const double hamNorm  = dm.normalizeHam(ham, n);
+
+        ofs << n
+            << ',' << invNorm
+            << ',' << runsNorm
+            << ',' << remNorm
+            << ',' << oscNorm
+            << ',' << disNorm
+            << ',' << hamNorm
+            << '\n';
     }
 };
 #endif //CHARTBUILDER_H
